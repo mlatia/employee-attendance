@@ -26,6 +26,20 @@ async function main() {
       const id = randomUUID();
       await m.insert(Employee, { id, employeeNo: 'HRD001', fullName: 'Admin HRD', department: 'Human Resources', jobTitle: 'HRD' });
       await m.insert(Account, { employeeId: id, email, passwordHash, role: Role.HRD });
+      await m.insert(Employee, {
+        id,
+          employeeNo: 'HRD001',
+          fullName: 'Admin HRD',
+          department: 'Human Resources',
+          jobTitle: 'HRD'
+        });
+
+        await m.insert(Account, {
+          employeeId: id,
+          email,
+          passwordHash,
+          role: Role.HRD
+        });
     });
     console.log(`Akun HRD dibuat: ${email}`);
   } finally {

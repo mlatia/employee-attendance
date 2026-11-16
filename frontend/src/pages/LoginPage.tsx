@@ -64,7 +64,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               trailing={
-                <button type="button" onClick={() => setShowPassword((v) => !v)} className="cursor-pointer px-2 text-sm text-black underline">
+                <button type="button" onClick={() => setShowPassword((v) => !v)} className="cursor-pointer px-2 text-sm text-white/90 underline">
                   {showPassword ? 'Sembunyikan' : 'Tampilkan'}
                 </button>
               }
