@@ -42,7 +42,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col">
       <BrandHeader />
 
-      <main className="flex flex-1 items-center bg-[radial-gradient(ellipse_at_15%_35%,#ffffff_0%,#ececed_45%,#d8d8da_100%)] py-12">
+      <main className="flex flex-1 items-center bg-white py-12">
         <div className="mx-auto grid w-full max-w-[1180px] items-center gap-12 px-6 lg:grid-cols-2">
           <section>
             <h1 className="text-5xl font-bold leading-[1.15] text-dexa-700 md:text-[72px]">

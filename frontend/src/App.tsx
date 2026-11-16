@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { homePath, useAuth } from './auth/AuthContext'
 import ProtectedRoute from './auth/ProtectedRoute'
+import EmployeesPage from './pages/EmployeesPage'
 import LoginPage from './pages/LoginPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 
@@ -15,7 +16,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute role="HRD" />}>
-        <Route path="/employees" element={<PlaceholderPage title="Data Karyawan" />} />
+        <Route path="/employees" element={<EmployeesPage />} />
       </Route>
       <Route element={<ProtectedRoute role="EMPLOYEE" />}>
         <Route path="/attendance" element={<PlaceholderPage title="Absensi WFH" />} />

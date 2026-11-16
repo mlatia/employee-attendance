@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env';
 import { dbOptions } from './database/data-source';
+import { EmployeesModule } from './employees/employees.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { dbOptions } from './database/data-source';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 180 }]),
     TypeOrmModule.forRootAsync({ useFactory: () => dbOptions(process.env) }),
     AuthModule,
+    EmployeesModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
