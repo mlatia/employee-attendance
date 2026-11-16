@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import type { CreateEmployeeInput, Role } from '../types'
+import type { CreateEmployeeInput, Employee, Role } from '../types'
 import FormField from './FormField'
 
 interface Props {
+  employee?: Employee
+  isSelf?: boolean
   onSubmit: (input: CreateEmployeeInput) => Promise<void>
   onCancel: () => void
 }
@@ -17,11 +19,28 @@ const EMPTY: CreateEmployeeInput = {
   role: 'EMPLOYEE',
 }
 
-export default function EmployeeForm({ onSubmit, onCancel }: Props) {
-  const [form, setForm] = useState<CreateEmployeeInput>(EMPTY)
+const initialValues = (e?: Employee): CreateEmployeeInput =>
+  e
+    ? {
+        employeeNo: e.employeeNo,
+        fullName: e.fullName,
+        department: e.department,
+        jobTitle: e.jobTitle,
+        email: e.email,
+        password: '',
+        role: e.role,
+      }
+    : EMPTY
+
+export default function EmployeeForm({ employee, isSelf = false, onSubmit, onCancel }: Props) {
+  const isEdit = !!employee
+  const [form, setForm] = useState<CreateEmployeeInput>(() => initialValues(employee))
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // HRD tidak mereset password akunnya sendiri dari sini (sesinya akan ikut tercabut)
+  const showPasswordField = !isEdit || !isSelf
 
   const set = <K extends keyof CreateEmployeeInput>(key: K, value: CreateEmployeeInput[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
@@ -31,7 +50,7 @@ export default function EmployeeForm({ onSubmit, onCancel }: Props) {
     setError('')
     const values = [form.employeeNo, form.fullName, form.department, form.jobTitle, form.email].map((v) => v.trim())
     if (values.some((v) => !v)) return setError('Semua kolom wajib diisi')
-    if (form.password.length < 8) return setError('Password minimal 8 karakter')
+    if ((!isEdit || form.password) && form.password.length < 8) return setError('Password minimal 8 karakter')
 
     setSubmitting(true)
     try {
@@ -45,7 +64,15 @@ export default function EmployeeForm({ onSubmit, onCancel }: Props) {
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField id="employeeNo" label="Nomor Karyawan" value={form.employeeNo} onChange={(e) => set('employeeNo', e.target.value)} maxLength={30} required />
+        <FormField
+          id="employeeNo"
+          label="Nomor Karyawan"
+          value={form.employeeNo}
+          onChange={(e) => set('employeeNo', e.target.value)}
+          maxLength={30}
+          disabled={isEdit}
+          required
+        />
         <FormField id="fullName" label="Nama Lengkap" value={form.fullName} onChange={(e) => set('fullName', e.target.value)} maxLength={100} required />
         <FormField id="department" label="Departemen" value={form.department} onChange={(e) => set('department', e.target.value)} maxLength={80} required />
         <FormField id="jobTitle" label="Jabatan" value={form.jobTitle} onChange={(e) => set('jobTitle', e.target.value)} maxLength={80} required />
@@ -53,22 +80,28 @@ export default function EmployeeForm({ onSubmit, onCancel }: Props) {
 
       <FormField id="email" type="email" label="Email (untuk login)" autoComplete="off" value={form.email} onChange={(e) => set('email', e.target.value)} maxLength={254} required />
 
-      <FormField
-        id="password"
-        type={showPassword ? 'text' : 'password'}
-        label="Password Awal"
-        hint="Minimal 8 karakter. Berikan ke karyawan secara langsung."
-        autoComplete="new-password"
-        value={form.password}
-        onChange={(e) => set('password', e.target.value)}
-        maxLength={128}
-        required
-        trailing={
-          <button type="button" onClick={() => setShowPassword((v) => !v)} className="cursor-pointer px-2 text-sm text-dexa-700 underline">
-            {showPassword ? 'Sembunyikan' : 'Tampilkan'}
-          </button>
-        }
-      />
+      {showPasswordField && (
+        <FormField
+          id="password"
+          type={showPassword ? 'text' : 'password'}
+          label={isEdit ? 'Password Baru (opsional)' : 'Password Awal'}
+          hint={
+            isEdit
+              ? 'Kosongkan jika tidak diubah. Jika diisi, semua sesi login karyawan ini dicabut.'
+              : 'Minimal 8 karakter. Berikan ke karyawan secara langsung.'
+          }
+          autoComplete="new-password"
+          value={form.password}
+          onChange={(e) => set('password', e.target.value)}
+          maxLength={128}
+          required={!isEdit}
+          trailing={
+            <button type="button" onClick={() => setShowPassword((v) => !v)} className="cursor-pointer px-2 text-sm text-dexa-700 underline">
+              {showPassword ? 'Sembunyikan' : 'Tampilkan'}
+            </button>
+          }
+        />
+      )}
 
       <div>
         <label htmlFor="role" className="mb-1 block text-sm font-semibold">Role</label>
@@ -76,7 +109,8 @@ export default function EmployeeForm({ onSubmit, onCancel }: Props) {
           id="role"
           value={form.role}
           onChange={(e) => set('role', e.target.value as Role)}
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-[15px] outline-none focus:border-dexa-600 focus:ring-2 focus:ring-dexa-600/20"
+          disabled={isEdit && isSelf}
+          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-[15px] outline-none focus:border-dexa-600 focus:ring-2 focus:ring-dexa-600/20 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-500"
         >
           <option value="EMPLOYEE">Karyawan</option>
           <option value="HRD">HRD</option>

@@ -1,13 +1,15 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { Brackets, DataSource, Repository } from 'typeorm';
+import type { AuthUser } from '../auth/auth.types';
 import { PasswordService } from '../auth/password.service';
 import { Role } from '../common/role.enum';
 import { Account } from '../database/entities/account.entity';
 import { Employee } from '../database/entities/employee.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { ListEmployeesQuery } from './dto/list-employees.query';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
 export interface EmployeeView {
   id: string;
@@ -64,7 +66,6 @@ export class EmployeesService {
     const passwordHash = await this.passwords.hash(dto.password);
 
     try {
-      // employee + account harus masuk bersamaan, kalau salah satu gagal dua-duanya batal
       await this.dataSource.transaction(async (m) => {
         await m.insert(Employee, {
           id,
@@ -76,13 +77,11 @@ export class EmployeesService {
         await m.insert(Account, { employeeId: id, email: dto.email, passwordHash, role: dto.role ?? Role.EMPLOYEE });
       });
     } catch (e) {
-      // dua request bersamaan lolos pengecekan di atas, unique index di DB yang menang
       if (isDuplicate(e)) throw new ConflictException('Nomor karyawan atau email sudah terdaftar');
       throw e;
     }
 
-    const account = await this.accounts.findOneOrFail({ where: { employeeId: id }, relations: { employee: true } });
-    return toView(account);
+    return toView(await this.findAccount(id));
   }
 
   async list({ q, page, limit }: ListEmployeesQuery): Promise<Paginated<EmployeeView>> {
@@ -111,5 +110,64 @@ export class EmployeesService {
       .getManyAndCount();
 
     return { items: rows.map(toView), total, page, limit };
+  }
+
+  async update(id: string, dto: UpdateEmployeeDto, actor: AuthUser): Promise<EmployeeView> {
+    const account = await this.findAccount(id);
+    const isSelf = id === actor.id;
+
+    if (isSelf && dto.role !== undefined && dto.role !== account.role) {
+      throw new ForbiddenException('Role akun sendiri tidak dapat diubah');
+    }
+    if (isSelf && dto.password !== undefined) {
+      throw new ForbiddenException('Password akun sendiri tidak dapat direset lewat menu ini');
+    }
+    if (dto.email !== undefined && dto.email !== account.email && (await this.accounts.existsBy({ email: dto.email }))) {
+      throw new ConflictException('Email sudah terdaftar');
+    }
+
+    const employeePatch: Partial<Pick<Employee, 'fullName' | 'department' | 'jobTitle'>> = {};
+    if (dto.fullName !== undefined) employeePatch.fullName = dto.fullName;
+    if (dto.department !== undefined) employeePatch.department = dto.department;
+    if (dto.jobTitle !== undefined) employeePatch.jobTitle = dto.jobTitle;
+
+    const accountPatch: Partial<Pick<Account, 'email' | 'role' | 'passwordHash'>> = {};
+    if (dto.email !== undefined) accountPatch.email = dto.email;
+    if (dto.role !== undefined) accountPatch.role = dto.role;
+    if (dto.password !== undefined) accountPatch.passwordHash = await this.passwords.hash(dto.password);
+
+    try {
+      await this.dataSource.transaction(async (m) => {
+        if (Object.keys(employeePatch).length) await m.update(Employee, { id }, employeePatch);
+        if (Object.keys(accountPatch).length) await m.update(Account, { employeeId: id }, accountPatch);
+        // password direset: sesi lama harus mati
+        if (dto.password !== undefined) await m.increment(Account, { employeeId: id }, 'authVersion', 1);
+      });
+    } catch (e) {
+      if (isDuplicate(e)) throw new ConflictException('Email sudah terdaftar');
+      throw e;
+    }
+
+    return toView(await this.findAccount(id));
+  }
+
+  async setStatus(id: string, active: boolean, actor: AuthUser): Promise<EmployeeView> {
+    if (id === actor.id && !active) throw new ForbiddenException('Tidak dapat menonaktifkan akun sendiri');
+
+    const account = await this.findAccount(id);
+    if (account.active === active) return toView(account);
+
+    await this.dataSource.transaction(async (m) => {
+      await m.update(Account, { employeeId: id }, { active });
+      await m.increment(Account, { employeeId: id }, 'authVersion', 1);
+    });
+
+    return toView(await this.findAccount(id));
+  }
+
+  private async findAccount(id: string): Promise<Account> {
+    const account = await this.accounts.findOne({ where: { employeeId: id }, relations: { employee: true } });
+    if (!account) throw new NotFoundException('Karyawan tidak ditemukan');
+    return account;
   }
 }

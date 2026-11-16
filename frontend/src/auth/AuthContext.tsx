@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { authApi } from '../api/auth.api'
+import { setUnauthorizedHandler } from '../api/http'
 import type { Role, User } from '../types'
 
 interface AuthState {
@@ -19,6 +20,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     authApi.me().then(setUser).catch(() => setUser(null)).finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => setUser(null))
+    return () => setUnauthorizedHandler()
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {

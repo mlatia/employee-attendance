@@ -36,3 +36,12 @@ export interface CreateEmployeeInput {
   password: string
   role: Role
 }
+
+export interface UpdateEmployeeInput {
+  fullName: string
+  department: string
+  jobTitle: string
+  email: string
+  role: Role
+  password?: string
+}

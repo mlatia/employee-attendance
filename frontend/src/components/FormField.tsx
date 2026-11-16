@@ -14,7 +14,7 @@ export default function FormField({ label, hint, trailing, id, ...props }: Props
         <input
           id={id}
           {...props}
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-[15px] outline-none transition focus:border-dexa-600 focus:ring-2 focus:ring-dexa-600/20"
+          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-[15px] outline-none transition focus:border-dexa-600 focus:ring-2 focus:ring-dexa-600/20 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-500"
         />
         {trailing && <div className="absolute right-1 top-1/2 -translate-y-1/2">{trailing}</div>}
       </div>

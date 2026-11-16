@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { employeesApi } from '../api/employees.api'
+import { useAuth } from '../auth/AuthContext'
 import AppLayout from '../components/AppLayout'
+import ConfirmDialog from '../components/ConfirmDialog'
 import EmployeeForm from '../components/EmployeeForm'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -10,7 +12,7 @@ import type { CreateEmployeeInput, Employee, Paginated } from '../types'
 
 const PAGE_SIZE = 10
 
-const columns: Column<Employee>[] = [
+const baseColumns: Column<Employee>[] = [
   { key: 'employeeNo', header: 'No. Karyawan', render: (e) => e.employeeNo, className: 'whitespace-nowrap font-semibold' },
   { key: 'fullName', header: 'Nama', render: (e) => e.fullName },
   { key: 'department', header: 'Departemen', render: (e) => e.department },
@@ -28,6 +30,9 @@ const columns: Column<Employee>[] = [
   },
 ]
 
+const actionBtn =
+  'cursor-pointer rounded-full border px-3 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40'
+
 interface Result {
   key: string
   data?: Paginated<Employee>
@@ -35,10 +40,12 @@ interface Result {
 }
 
 export default function EmployeesPage() {
+  const { user } = useAuth()
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
   const [reload, setReload] = useState(0)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modal, setModal] = useState<{ employee?: Employee } | null>(null)
+  const [statusTarget, setStatusTarget] = useState<Employee | null>(null)
   const [notice, setNotice] = useState('')
   const [result, setResult] = useState<Result>({ key: '' })
 
@@ -61,17 +68,80 @@ export default function EmployeesPage() {
     setPage(1)
   }, [])
 
-  const closeModal = useCallback(() => setModalOpen(false), [])
+  const closeModal = useCallback(() => setModal(null), [])
+  const closeStatus = useCallback(() => setStatusTarget(null), [])
 
-  async function handleCreate(input: CreateEmployeeInput) {
-    const created = await employeesApi.create(input)
-    setModalOpen(false)
-    setNotice(`Karyawan ${created.fullName} berhasil ditambahkan`)
-    setPage(1)
+  async function handleSave(values: CreateEmployeeInput) {
+    const editing = modal?.employee
+    if (editing) {
+      const { fullName, department, jobTitle, email, role, password } = values
+      const updated = await employeesApi.update(editing.id, {
+        fullName,
+        department,
+        jobTitle,
+        email,
+        role,
+        password: password || undefined,
+      })
+      setNotice(`Data ${updated.fullName} berhasil diperbarui`)
+    } else {
+      const created = await employeesApi.create(values)
+      setNotice(`Karyawan ${created.fullName} berhasil ditambahkan`)
+      setPage(1)
+    }
+    setModal(null)
     setReload((n) => n + 1)
   }
 
+  async function handleToggleStatus() {
+    if (!statusTarget) return
+    const updated = await employeesApi.setStatus(statusTarget.id, !statusTarget.active)
+    setNotice(`Akun ${updated.fullName} ${updated.active ? 'diaktifkan kembali' : 'dinonaktifkan'}`)
+    setStatusTarget(null)
+    setReload((n) => n + 1)
+  }
+
+  const columns: Column<Employee>[] = [
+    ...baseColumns,
+    {
+      key: 'actions',
+      header: 'Aksi',
+      render: (e) => {
+        const isSelf = e.id === user?.id
+        return (
+          <div className="flex gap-2 whitespace-nowrap">
+            <button
+              onClick={() => {
+                setNotice('')
+                setModal({ employee: e })
+              }}
+              className={`${actionBtn} border-neutral-300 hover:bg-neutral-100`}
+            >
+              Ubah
+            </button>
+            <button
+              disabled={isSelf}
+              title={isSelf ? 'Tidak dapat menonaktifkan akun sendiri' : undefined}
+              onClick={() => {
+                setNotice('')
+                setStatusTarget(e)
+              }}
+              className={`${actionBtn} ${
+                e.active
+                  ? 'border-dexa-700 text-dexa-700 hover:bg-dexa-700 hover:text-white'
+                  : 'border-green-700 text-green-800 hover:bg-green-700 hover:text-white'
+              } disabled:hover:bg-transparent`}
+            >
+              {e.active ? 'Nonaktifkan' : 'Aktifkan'}
+            </button>
+          </div>
+        )
+      },
+    },
+  ]
+
   const data = result.data
+  const editing = modal?.employee
 
   return (
     <AppLayout>
@@ -80,7 +150,7 @@ export default function EmployeesPage() {
         <button
           onClick={() => {
             setNotice('')
-            setModalOpen(true)
+            setModal({})
           }}
           className="cursor-pointer rounded-full bg-dexa-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-dexa-600"
         >
@@ -112,9 +182,29 @@ export default function EmployeesPage() {
       />
       <Pagination page={page} limit={PAGE_SIZE} total={data?.total ?? 0} onChange={setPage} />
 
-      <Modal open={modalOpen} title="Tambah Karyawan" onClose={closeModal}>
-        <EmployeeForm onSubmit={handleCreate} onCancel={closeModal} />
+      <Modal open={modal !== null} title={editing ? 'Ubah Karyawan' : 'Tambah Karyawan'} onClose={closeModal}>
+        <EmployeeForm
+          key={editing?.id ?? 'new'}
+          employee={editing}
+          isSelf={editing?.id === user?.id}
+          onSubmit={handleSave}
+          onCancel={closeModal}
+        />
       </Modal>
+
+      <ConfirmDialog
+        open={statusTarget !== null}
+        title={statusTarget?.active ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}
+        message={
+          statusTarget?.active
+            ? `Nonaktifkan akun ${statusTarget.fullName}? Karyawan tidak bisa login dan semua sesi yang sedang aktif langsung dicabut.`
+            : `Aktifkan kembali akun ${statusTarget?.fullName}? Karyawan bisa login lagi dengan password yang sama.`
+        }
+        confirmLabel={statusTarget?.active ? 'Nonaktifkan' : 'Aktifkan'}
+        danger={!!statusTarget?.active}
+        onConfirm={handleToggleStatus}
+        onCancel={closeStatus}
+      />
     </AppLayout>
   )
 }
