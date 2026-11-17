@@ -25,7 +25,6 @@ export class AuthService {
     return { token: await this.jwt.signAsync(payload), user: this.toUser(account) };
   }
 
-  /** Dipanggil guard di tiap request: akun nonaktif / authVersion berubah = sesi dicabut. */
   async session({ sub, av }: JwtPayload): Promise<AuthUser> {
     const account = await this.accounts.findOne({ where: { employeeId: sub }, relations: { employee: true } });
     if (!account || !account.active || account.authVersion !== av) throw new UnauthorizedException();
@@ -37,6 +36,13 @@ export class AuthService {
   }
 
   private toUser(a: Account): AuthUser {
-    return { id: a.employeeId, email: a.email, role: a.role, fullName: a.employee.fullName, employeeNo: a.employee.employeeNo };
+    return {
+      id: a.employeeId,
+      email: a.email,
+      role: a.role,
+      fullName: a.employee.fullName,
+      employeeNo: a.employee.employeeNo,
+      department: a.employee.department,
+    };
   }
 }

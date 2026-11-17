@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env';
 import { dbOptions } from './database/data-source';
 import { EmployeesModule } from './employees/employees.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { EmployeesModule } from './employees/employees.module';
     TypeOrmModule.forRootAsync({ useFactory: () => dbOptions(process.env) }),
     AuthModule,
     EmployeesModule,
+    AttendanceModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

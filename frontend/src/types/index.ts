@@ -45,3 +45,18 @@ export interface UpdateEmployeeInput {
   role: Role
   password?: string
 }
+
+export interface AttendanceRecord {
+  id: string
+  workDate: string
+  submittedAt: string
+  fullName: string
+  employeeNo: string
+  department: string
+  note: string
+}
+
+export interface TodayAttendance {
+  workDate: string
+  record: AttendanceRecord | null
+}

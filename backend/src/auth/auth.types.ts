@@ -6,6 +6,7 @@ export interface AuthUser {
   role: Role;
   fullName: string;
   employeeNo: string;
+  department: string;
 }
 
 export interface JwtPayload {
