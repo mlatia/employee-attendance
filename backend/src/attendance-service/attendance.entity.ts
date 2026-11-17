@@ -1,4 +1,5 @@
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
+import type { PhotoSource } from '../common/attendance.contract';
 
 @Entity('attendances')
 @Index('uq_attendance_day', ['employeeId', 'workDate'], { unique: true })
@@ -16,4 +17,5 @@ export class Attendance {
   @Column({ type: 'varchar', length: 50 }) photoFile!: string;
   @Column({ type: 'char', length: 36 }) idempotencyKey!: string;
   @Column({ type: 'char', length: 64 }) requestHash!: string;
+  @Column({ type: 'varchar', length: 10, default: 'FILE' }) photoSource!: PhotoSource;
 }

@@ -10,6 +10,7 @@ import { AttendanceService } from './attendance.service';
 import { LocalPhotoStorage } from './photo/local-photo-storage';
 import { PhotoStorage } from './photo/photo-storage';
 import { PhotoProcessor } from './photo/photo.processor';
+import { ChallengeService } from './challenge.service';
 
 @Module({
   imports: [
@@ -23,6 +24,8 @@ import { PhotoProcessor } from './photo/photo.processor';
     PhotoProcessor,
     InternalGuard,
     { provide: PhotoStorage, useClass: LocalPhotoStorage },
+    ChallengeService,
   ],
+
 })
 export class AttendanceServiceModule {}

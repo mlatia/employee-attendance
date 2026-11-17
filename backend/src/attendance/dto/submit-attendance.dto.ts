@@ -7,4 +7,9 @@ export class SubmitAttendanceDto {
   @IsString()
   @MaxLength(500)
   note?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  challengeToken?: string;
 }

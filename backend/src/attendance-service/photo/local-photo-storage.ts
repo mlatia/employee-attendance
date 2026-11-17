@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { PhotoStorage } from './photo-storage';
 
@@ -22,7 +22,9 @@ export class LocalPhotoStorage extends PhotoStorage implements OnModuleInit {
   save(key: string, data: Buffer) {
     return writeFile(this.path(key), data, { flag: 'wx' });
   }
-
+  read(key: string) {
+    return readFile(this.path(key));
+  }
   remove(key: string) {
     return rm(this.path(key), { force: true });
   }

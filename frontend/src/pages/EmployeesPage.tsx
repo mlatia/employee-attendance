@@ -180,7 +180,7 @@ export default function EmployeesPage() {
         loading={loading}
         emptyText={q ? `Tidak ada karyawan yang cocok dengan "${q}"` : 'Belum ada data karyawan'}
       />
-      <Pagination page={page} limit={PAGE_SIZE} total={data?.total ?? 0} onChange={setPage} />
+      <Pagination page={page} limit={PAGE_SIZE} total={data?.total ?? 0} onChange={setPage} label="karyawan" />
 
       <Modal open={modal !== null} title={editing ? 'Ubah Karyawan' : 'Tambah Karyawan'} onClose={closeModal}>
         <EmployeeForm

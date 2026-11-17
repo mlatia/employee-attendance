@@ -3,9 +3,10 @@ interface Props {
   limit: number
   total: number
   onChange: (page: number) => void
+  label?: string
 }
 
-export default function Pagination({ page, limit, total, onChange }: Props) {
+export default function Pagination({ page, limit, total, onChange, label = 'data' }: Props) {
   const totalPages = Math.max(1, Math.ceil(total / limit))
   const from = total === 0 ? 0 : (page - 1) * limit + 1
   const to = Math.min(page * limit, total)
@@ -18,7 +19,7 @@ export default function Pagination({ page, limit, total, onChange }: Props) {
   return (
     <div className="mt-4 flex flex-col items-center justify-between gap-3 text-sm sm:flex-row">
       <p className="text-neutral-600">
-        Menampilkan {from}–{to} dari {total} karyawan
+        Menampilkan {from}–{to} dari {total} {label}
       </p>
       <div className="flex items-center gap-1">
         <button className={`${btn} border-neutral-300 hover:bg-neutral-100`} disabled={page <= 1} onClick={() => onChange(page - 1)}>

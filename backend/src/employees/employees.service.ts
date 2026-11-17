@@ -10,6 +10,7 @@ import { Employee } from '../database/entities/employee.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { ListEmployeesQuery } from './dto/list-employees.query';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { Paginated } from '../common/pagination';
 
 export interface EmployeeView {
   id: string;
@@ -21,13 +22,6 @@ export interface EmployeeView {
   role: Role;
   active: boolean;
   createdAt: string;
-}
-
-export interface Paginated<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
 }
 
 const toView = (a: Account): EmployeeView => ({

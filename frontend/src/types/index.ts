@@ -1,4 +1,5 @@
 export type Role = 'HRD' | 'EMPLOYEE'
+export type PhotoSource = 'CAMERA' | 'FILE'
 
 export interface User {
   id: string
@@ -54,9 +55,22 @@ export interface AttendanceRecord {
   employeeNo: string
   department: string
   note: string
+  source: PhotoSource
 }
 
 export interface TodayAttendance {
   workDate: string
   record: AttendanceRecord | null
+}
+
+export interface Challenge {
+  token: string
+  expiresAt: string
+}
+
+export interface ListAttendanceParams {
+  page: number
+  limit: number
+  date?: string
+  q?: string
 }

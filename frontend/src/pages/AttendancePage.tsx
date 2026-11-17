@@ -5,17 +5,18 @@ import { useAuth } from '../auth/AuthContext'
 import AppLayout from '../components/AppLayout'
 import Card from '../components/Card'
 import PhotoUpload from '../components/PhotoUpload'
+import SourceBadge from '../components/SourceBadge'
 import { formatWib, formatWorkDate } from '../lib/format'
 import { resizeToJpeg } from '../lib/image'
 import type { AttendanceRecord, TodayAttendance } from '../types'
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : 'Terjadi kesalahan, coba lagi')
 
-function InfoItem({ label, value, className = '' }: { label: string; value: string; className?: string }) {
+function InfoItem({ label, children, className = '' }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
       <dt className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{label}</dt>
-      <dd className="mt-0.5 break-words font-semibold text-dexa-ink">{value}</dd>
+      <dd className="mt-0.5 break-words font-semibold text-dexa-ink">{children}</dd>
     </div>
   )
 }
@@ -39,11 +40,16 @@ function AttendanceDone({ record }: { record: AttendanceRecord }) {
       </p>
 
       <dl className="mt-6 grid gap-x-6 gap-y-4 border-t border-neutral-200 pt-6 sm:grid-cols-2">
-        <InfoItem label="Nama" value={record.fullName} />
-        <InfoItem label="No. Karyawan" value={record.employeeNo} />
-        <InfoItem label="Departemen" value={record.department} />
-        <InfoItem label="Tanggal" value={formatWorkDate(record.workDate)} />
-        <InfoItem label="Catatan" value={record.note || '-'} className="sm:col-span-2" />
+        <InfoItem label="Nama">{record.fullName}</InfoItem>
+        <InfoItem label="No. Karyawan">{record.employeeNo}</InfoItem>
+        <InfoItem label="Departemen">{record.department}</InfoItem>
+        <InfoItem label="Tanggal">{formatWorkDate(record.workDate)}</InfoItem>
+        <InfoItem label="Foto dari">
+          <SourceBadge source={record.source} />
+        </InfoItem>
+        <InfoItem label="Catatan" className="sm:col-span-2">
+          {record.note || '-'}
+        </InfoItem>
       </dl>
     </Card>
   )
@@ -54,11 +60,13 @@ export default function AttendancePage() {
   const [today, setToday] = useState<TodayAttendance | null>(null)
   const [loadError, setLoadError] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [token, setToken] = useState<string | null>(null)
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  // satu "percobaan kirim" = satu Idempotency-Key + satu blob; retry memakai keduanya lagi
-  const attempt = useRef<{ key: string; blob: Blob } | null>(null)
+  const [uploadKey, setUploadKey] = useState(0) // ganti nilainya untuk mereset PhotoUpload
+  // satu "percobaan kirim" = satu Idempotency-Key + satu blob + token yang sama; retry memakai ketiganya lagi
+  const attempt = useRef<{ key: string; blob: Blob; token: string | null } | null>(null)
 
   const loadToday = useCallback(
     () => attendanceApi.today().then(setToday).catch((e) => setLoadError(errorText(e))),
@@ -69,9 +77,10 @@ export default function AttendancePage() {
     void loadToday()
   }, [loadToday])
 
-  function changeFile(next: File | null) {
+  function changeFile(next: File | null, nextToken: string | null) {
     attempt.current = null
     setFile(next)
+    setToken(nextToken)
   }
 
   function changeNote(value: string) {
@@ -88,13 +97,22 @@ export default function AttendancePage() {
       if (!attempt.current) {
         const blob = await resizeToJpeg(file).catch(() => null)
         if (!blob) return setError('Foto tidak dapat dibaca. Coba foto lain.')
-        attempt.current = { key: crypto.randomUUID(), blob }
+        attempt.current = { key: crypto.randomUUID(), blob, token }
       }
-      const record = await attendanceApi.submit(attempt.current.blob, note.trim(), attempt.current.key)
+      const { key, blob, token: tok } = attempt.current
+      const record = await attendanceApi.submit(blob, note.trim(), key, tok)
       setToday((t) => ({ workDate: t?.workDate ?? record.workDate, record }))
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) await loadToday()
-      else setError(errorText(err))
+      if (err instanceof ApiError && err.status === 409) {
+        await loadToday()
+      } else if (err instanceof ApiError && err.status === 410) {
+        // token kamera kedaluwarsa: foto harus diambil ulang
+        changeFile(null, null)
+        setUploadKey((k) => k + 1)
+        setError(err.message)
+      } else {
+        setError(errorText(err))
+      }
     } finally {
       setSubmitting(false)
     }
@@ -121,7 +139,7 @@ export default function AttendancePage() {
         {today && !today.record && (
           <Card>
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
-              <PhotoUpload onChange={changeFile} disabled={submitting} />
+              <PhotoUpload key={uploadKey} onChange={changeFile} disabled={submitting} />
 
               <div>
                 <label htmlFor="note" className="mb-1 block text-sm font-semibold">Catatan (opsional)</label>

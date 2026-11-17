@@ -6,9 +6,12 @@ import {
   ATTENDANCE_PATTERNS,
   ATTENDANCE_SERVICE,
   AttendanceView,
+  ChallengeView,
+  ListPayload,
   SubmitPayload,
   TodayView,
 } from '../common/attendance.contract';
+import type { Paginated } from '../common/pagination';
 import { Actor, callRemote } from '../common/rpc';
 
 @Injectable()
@@ -23,14 +26,26 @@ export class AttendanceClient {
   }
 
   submit(user: AuthUser, data: SubmitPayload) {
-    return callRemote<AttendanceView>(this.client, ATTENDANCE_PATTERNS.submit, this.envelope(user, data));
+    return this.call<AttendanceView>(ATTENDANCE_PATTERNS.submit, user, data);
   }
 
   today(user: AuthUser) {
-    return callRemote<TodayView>(this.client, ATTENDANCE_PATTERNS.today, this.envelope(user, null));
+    return this.call<TodayView>(ATTENDANCE_PATTERNS.today, user, null);
   }
 
-  private envelope<T>(user: AuthUser, data: T) {
+  challenge(user: AuthUser) {
+    return this.call<ChallengeView>(ATTENDANCE_PATTERNS.challenge, user, null);
+  }
+
+  list(user: AuthUser, query: ListPayload) {
+    return this.call<Paginated<AttendanceView>>(ATTENDANCE_PATTERNS.list, user, query);
+  }
+
+  photo(user: AuthUser, id: string) {
+    return this.call<string>(ATTENDANCE_PATTERNS.photo, user, { id });
+  }
+
+  private call<T>(pattern: string, user: AuthUser, data: unknown) {
     const actor: Actor = {
       id: user.id,
       role: user.role,
@@ -38,6 +53,6 @@ export class AttendanceClient {
       employeeNo: user.employeeNo,
       department: user.department,
     };
-    return { secret: this.secret, actor, data };
+    return callRemote<T>(this.client, pattern, { secret: this.secret, actor, data });
   }
 }
