@@ -24,7 +24,7 @@ function InfoItem({ label, children, className = '' }: { label: string; children
 function AttendanceDone({ record }: { record: AttendanceRecord }) {
   return (
     <Card>
-      <div className="flex items-start gap-3 sm:items-center">
+      <div className="flex items-center gap-3">
         <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-dexa-700 text-lg text-white">
           ✓
         </span>
@@ -125,16 +125,20 @@ export default function AttendancePage() {
         Halo, {user?.fullName}.{today && ` ${formatWorkDate(today.workDate)}`}
       </p>
 
-      <div className="mt-6">
-        {loadError && (
-          <p role="alert" className="mb-4 max-w-2xl rounded-md bg-dexa-700/10 px-4 py-2 text-sm text-dexa-700">
-            {loadError}
-          </p>
-        )}
+      <div className="mt-6 items-center">
+          {loadError && (
+            <p role="alert" className="mb-4 max-w-2xl rounded-md bg-dexa-700/10 px-4 py-2 text-sm text-dexa-700">
+              {loadError}
+            </p>
+          )}
 
-        {!today && !loadError && <p className="text-neutral-500">Memuat…</p>}
+          {!today && !loadError && <p className="text-neutral-500">Memuat…</p>}
 
-        {today?.record && <AttendanceDone record={today.record} />}
+          {today?.record && (
+            <div className="mx-auto w-full max-w-xl">
+              <AttendanceDone record={today.record} />
+            </div>
+          )}
 
         {today && !today.record && (
           <Card>
