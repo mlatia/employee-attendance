@@ -1,18 +1,20 @@
 import type { DataSourceOptions } from 'typeorm';
-import { Account } from './entities/account.entity';
-import { Employee } from './entities/employee.entity';
 
+export type DbService = 'IDENTITY' | 'ATTENDANCE';
+
+/** Tiap service memakai database dan user MySQL sendiri, dan hanya memuat entity miliknya. */
 export function dbOptions(
   env: NodeJS.ProcessEnv,
-  entities: DataSourceOptions['entities'] = [Employee, Account],
+  entities: DataSourceOptions['entities'],
+  service: DbService,
 ): DataSourceOptions {
   return {
     type: 'mysql',
     host: env.DB_HOST ?? '127.0.0.1',
     port: Number(env.DB_PORT ?? 3306),
-    username: env.DB_USER,
-    password: env.DB_PASSWORD,
-    database: env.DB_NAME,
+    username: env[`${service}_DB_USER`],
+    password: env[`${service}_DB_PASSWORD`],
+    database: env[`${service}_DB_NAME`],
     entities,
     charset: 'utf8mb4',
     timezone: 'Z',

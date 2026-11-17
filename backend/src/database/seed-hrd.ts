@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { DataSource } from 'typeorm';
-import { PasswordService } from '../auth/password.service';
 import { Role } from '../common/role.enum';
+import { PasswordService } from '../employee-service/password.service';
 import { dbOptions } from './data-source';
 import { Account } from './entities/account.entity';
 import { Employee } from './entities/employee.entity';
@@ -15,7 +15,7 @@ async function main() {
     throw new Error('Isi SEED_HRD_EMAIL dan SEED_HRD_PASSWORD (min 12 karakter) di .env');
   }
 
-  const ds = await new DataSource(dbOptions(process.env)).initialize();
+  const ds = await new DataSource(dbOptions(process.env, [Employee, Account], 'IDENTITY')).initialize();
   try {
     if (await ds.getRepository(Account).existsBy({ email })) {
       console.log('Akun HRD sudah ada, dilewati.');
@@ -26,20 +26,6 @@ async function main() {
       const id = randomUUID();
       await m.insert(Employee, { id, employeeNo: 'HRD001', fullName: 'Admin HRD', department: 'Human Resources', jobTitle: 'HRD' });
       await m.insert(Account, { employeeId: id, email, passwordHash, role: Role.HRD });
-      await m.insert(Employee, {
-        id,
-          employeeNo: 'HRD001',
-          fullName: 'Admin HRD',
-          department: 'Human Resources',
-          jobTitle: 'HRD'
-        });
-
-        await m.insert(Account, {
-          employeeId: id,
-          email,
-          passwordHash,
-          role: Role.HRD
-        });
     });
     console.log(`Akun HRD dibuat: ${email}`);
   } finally {

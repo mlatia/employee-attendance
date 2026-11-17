@@ -43,7 +43,6 @@ export interface UpdateEmployeeInput {
   department: string
   jobTitle: string
   email: string
-  role: Role
   password?: string
 }
 

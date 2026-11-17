@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
-import { AuthService } from './auth.service';
+import { IdentityClient } from '../identity/identity.client';
 import { SESSION_COOKIE } from './auth.constants';
 import type { AuthUser, JwtPayload } from './auth.types';
 
@@ -9,7 +9,10 @@ export type AuthedRequest = Request & { user: AuthUser };
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwt: JwtService, private readonly auth: AuthService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly identity: IdentityClient,
+  ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
@@ -21,7 +24,8 @@ export class JwtAuthGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException();
     }
-    req.user = await this.auth.session(payload);
+    // tanda tangan valid belum cukup: status akun dan authVersion dicek ke employee-service
+    req.user = await this.identity.session({ sub: payload.sub, av: payload.av });
     return true;
   }
 }

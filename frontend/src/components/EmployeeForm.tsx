@@ -109,7 +109,8 @@ export default function EmployeeForm({ employee, isSelf = false, onSubmit, onCan
           id="role"
           value={form.role}
           onChange={(e) => set('role', e.target.value as Role)}
-          disabled={isEdit && isSelf}
+          disabled={isEdit}
+          title={isEdit ? 'Role tidak dapat diubah setelah akun dibuat' : undefined}
           className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-[15px] outline-none focus:border-dexa-600 focus:ring-2 focus:ring-dexa-600/20 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-500"
         >
           <option value="EMPLOYEE">Karyawan</option>

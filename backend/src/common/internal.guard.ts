@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { timingSafeEqual } from 'node:crypto';
-import { Envelope, rpcError } from './rpc';
+import { rpcError, ServiceCall } from './rpc';
 
 @Injectable()
 export class InternalGuard implements CanActivate {
@@ -12,7 +12,7 @@ export class InternalGuard implements CanActivate {
   }
 
   canActivate(ctx: ExecutionContext): boolean {
-    const given = Buffer.from(ctx.switchToRpc().getData<Envelope | undefined>()?.secret ?? '');
+    const given = Buffer.from(ctx.switchToRpc().getData<ServiceCall | undefined>()?.secret ?? '');
     if (given.length !== this.expected.length || !timingSafeEqual(given, this.expected)) {
       throw rpcError(403, 'Forbidden');
     }

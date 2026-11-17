@@ -2,21 +2,20 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from './auth/auth.module';
-import { validateEnv } from './config/env';
-import { dbOptions } from './database/data-source';
-import { EmployeesModule } from './employees/employees.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { AuthModule } from './auth/auth.module';
+import { gatewayEnv } from './config/env';
+import { EmployeesModule } from './employees/employees.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    ConfigModule.forRoot({ isGlobal: true, validate: gatewayEnv }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 180 }]),
-    TypeOrmModule.forRootAsync({ useFactory: () => dbOptions(process.env) }),
     AuthModule,
     EmployeesModule,
     AttendanceModule,
+    HealthModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

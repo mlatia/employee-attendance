@@ -21,6 +21,7 @@
     "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
     "seed:hrd": "nest build && node dist/database/seed-hrd.js",
     "seed:employee": "ts-node -r tsconfig-paths/register src/database/seed-employee.ts",
+    "start:identity": "node --watch dist/employee-service/main.js",
     "start:attendance": "node --watch dist/attendance-service/main.js"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "@nestjs/config": "^12.1.1",
     "@nestjs/core": "^12.0.1",
     "@nestjs/jwt": "^12.0.5",
+    "@nestjs/mapped-types": "^12.0.1",
     "@nestjs/microservices": "^12.5.1",
     "@nestjs/platform-express": "^12.0.1",
     "@nestjs/throttler": "^6.8.0",

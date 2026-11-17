@@ -74,13 +74,12 @@ export default function EmployeesPage() {
   async function handleSave(values: CreateEmployeeInput) {
     const editing = modal?.employee
     if (editing) {
-      const { fullName, department, jobTitle, email, role, password } = values
+      const { fullName, department, jobTitle, email, password } = values
       const updated = await employeesApi.update(editing.id, {
         fullName,
         department,
         jobTitle,
         email,
-        role,
         password: password || undefined,
       })
       setNotice(`Data ${updated.fullName} berhasil diperbarui`)

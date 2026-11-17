@@ -2,7 +2,7 @@
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { DataSource } from 'typeorm';
-import { PasswordService } from '../auth/password.service';
+import { PasswordService } from '../employee-service/password.service';
 import { Role } from '../common/role.enum';
 import { dbOptions } from './data-source';
 import { Account } from './entities/account.entity';
@@ -20,7 +20,7 @@ async function main() {
     );
   }
 
-  const ds = await new DataSource(dbOptions(process.env)).initialize();
+  const ds = await new DataSource(dbOptions(process.env, [Employee, Account], 'IDENTITY')).initialize();
 
   try {
     if (await ds.getRepository(Account).existsBy({ email })) {
