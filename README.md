@@ -108,3 +108,34 @@ Password mengikuti nilai `SEED_HRD_PASSWORD` dan `SEED_EMPLOYEE_PASSWORD` pada f
 - Aplikasi berjalan secara lokal.
 - Akses kamera memerlukan izin browser dan HTTPS atau localhost.
 - Akun karyawan dibuat oleh HRD, bukan melalui registrasi mandiri.
+
+## Architecture
+
+MyDexa menggunakan **Microservices Architecture** dengan NestJS. Sistem dibagi menjadi tiga aplikasi backend yang memiliki tanggung jawab masing-masing.
+
+### Services
+
+1. **API Gateway (Port 3000)**
+   - Menjadi entry point komunikasi antara frontend dan backend.
+   - Menangani HTTP REST API.
+   - Mengelola autentikasi dan otorisasi menggunakan JWT.
+   - Meneruskan request ke Employee Service dan Attendance Service melalui TCP.
+
+2. **Employee Service (Port 3001)**
+   - Mengelola data karyawan dan akun pengguna.
+   - Menangani proses login dan validasi kredensial.
+   - Mengelola role dan status akun karyawan.
+   - Mengelola database `identity_db`.
+
+3. **Attendance Service (Port 3002)**
+   - Menangani proses pencatatan absensi.
+   - Menyimpan waktu, catatan, dan bukti foto absensi.
+   - Mengelola riwayat dan monitoring absensi.
+   - Mengelola database `attendance_db`.
+
+### Service Communication
+
+- Frontend berkomunikasi dengan API Gateway melalui HTTP REST API.
+- API Gateway berkomunikasi dengan Employee Service dan Attendance Service menggunakan TCP.
+- Setiap service memiliki tanggung jawab dan database masing-masing.
+- Database diakses langsung oleh service pemiliknya, bukan oleh API Gateway.
